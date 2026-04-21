@@ -1,5 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
+import NavItems from "./ui/NavItems"
+import UserDropdown from "./UserDropdown"
 
 const Header = () => {
   return (
@@ -8,7 +10,10 @@ const Header = () => {
           <Link href="/">
           <Image src="/assets/icons/logo.svg" alt="Signalistic Logo" width={140} height={32} className="h-8 w-auto cursor-pointer"/>
           </Link>
-          <nav className=""></nav>
+          <nav className="hiddern sm:block">
+            <NavItems/>
+          </nav>
+          <UserDropdown/>
         </div>
     </header>
   )
