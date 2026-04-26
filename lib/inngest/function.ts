@@ -1,43 +1,79 @@
-'use server';
 
-import {auth} from "@/lib/better-auth/auth";
-import {inngest} from "@/lib/inngest/client";
-import {headers} from "next/headers";
+import { inngest } from "@/lib/inngest/client";
+import { PERSONALIZED_WELCOME_EMAIL_PROMPT } from "@/lib/inngest/prompt";
+import { sendWelcomeEmail } from "@/lib/nodemailer";
 
-export const signUpWithEmail = async ({ email, password, fullName, country, investmentGoals, riskTolerance, preferredIndustry }: SignUpFormData) => {
-    try {
-        const response = await auth.api.signUpEmail({ body: { email, password, name: fullName } })
 
-        if(response) {
-            await inngest.send({
-                name: 'app/user.created',
-                data: { email, name: fullName, country, investmentGoals, riskTolerance, preferredIndustry }
-            })
-        }
+type UserCreatedEvent = {
+  name: "app/user.created";
+  data: {
+    email: string;
+    name: string;
+    investmentGoals: string;
+    riskTolerance: string;
+    preferredIndustry: string;
+  };
+};
 
-        return { success: true, data: response }
-    } catch (e) {
-        console.log('Sign up failed', e)
-        return { success: false, error: 'Sign up failed' }
-    }
-}
+export const sendSignUpEmail = inngest.createFunction(
+  {
+    id: "sign-up-email",
+  },
 
-export const signInWithEmail = async ({ email, password }: SignInFormData) => {
-    try {
-        const response = await auth.api.signInEmail({ body: { email, password } })
+ 
+  async ({ event, step }: { event: UserCreatedEvent; step: any }) => {
+    if (event.name !== "app/user.created") return;
 
-        return { success: true, data: response }
-    } catch (e) {
-        console.log('Sign in failed', e)
-        return { success: false, error: 'Sign in failed' }
-    }
-}
+  
+    const userProfile = `
+- Investment goals: ${event.data.investmentGoals}
+- Risk tolerance: ${event.data.riskTolerance}
+- Preferred industry: ${event.data.preferredIndustry}
+`;
 
-export const signOut = async () => {
-    try {
-        await auth.api.signOut({ headers: await headers() });
-    } catch (e) {
-        console.log('Sign out failed', e)
-        return { success: false, error: 'Sign out failed' }
-    }
-}
+    
+    const prompt = PERSONALIZED_WELCOME_EMAIL_PROMPT.replace(
+      "{{userProfile}}",
+      userProfile
+    );
+
+    // ✅ AI call
+    const response = await step.ai.infer("generate-welcome-intro", {
+      model: step.ai.models.gemini({
+        model: "gemini-2.5-flash-lite",
+      }),
+      body: {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+      },
+    });
+
+    // ✅ Extract AI response safely
+    const part = response?.candidates?.[0]?.content?.parts?.[0];
+
+    const introText =
+      part && "text" in part
+        ? part.text
+        : "Thanks for joining Signalist. You now have the tools to track markets and make smarter moves.";
+
+    // ✅ Send email step
+    await step.run("send-welcome-email", async () => {
+      const { email, name } = event.data;
+
+      return await sendWelcomeEmail({
+        email,
+        name,
+        intro: introText,
+      });
+    });
+
+    return {
+      success: true,
+      message: "Welcome email sent successfully",
+    };
+  }
+);
