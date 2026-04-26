@@ -36,8 +36,14 @@ const Layout =async ({ children }: { children : React.ReactNode }) => {
                     </div>
                 </div>
 
-                <div className="flex-1 relative">
-                    <Image src="/assets/images/dashboard.png" alt="Dashboard Preview" width={1440} height={1150} className="auth-dashboard-preview absolute top-0" />
+                <div className="flex-1 flex items-start justify-center">
+                    <Image
+                        src="/assets/images/dashboard.png"
+                        alt="Dashboard Preview"
+                        width={1440}
+                        height={1150}
+                        className="auth-dashboard-preview"
+                    />
                 </div>
             </section>
         </main>
