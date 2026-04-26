@@ -8,6 +8,7 @@ import {INVESTMENT_GOALS, PREFERRED_INDUSTRIES, RISK_TOLERANCE_OPTIONS} from "@/
 import FooterLink from "@/components/forms/FooterLink";
 import {useRouter} from "next/navigation";
 import {toast} from "sonner";
+import { signUpWithEmail } from "@/lib/actions/auth.actions";
 
 const SignUp = () => {
     const router = useRouter()
@@ -31,10 +32,8 @@ const SignUp = () => {
 
     const onSubmit = async (data: SignUpFormData) => {
         try {
-            // TODO: Implement signUpWithEmail function
-            console.log('Sign up data:', data);
-            toast.success('Sign up successful!');
-            router.push('/');
+            const result=await signUpWithEmail(data);
+            if(result.success)router.push('/')
         } catch (e) {
             console.error(e);
             toast.error('Sign up failed', {
