@@ -27,7 +27,7 @@ const SignIn = () => {
     const onSubmit = async (data: SignInFormData) => {
         try {
             const result=await signInWithEmail(data);
-            if(!result.success)router.push('/');
+            if(result.success)router.push('/');
            
         } catch (e) {
             console.error(e);
@@ -48,7 +48,7 @@ const SignIn = () => {
                     placeholder="contact@example.com"
                     register={register}
                     error={errors.email}
-                    validation={{ required: 'Email is required', pattern: /^\w+@\w+\.\w+$/ }}
+                    validation={{ required: 'Email is required', pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }}
                 />
 
                 <InputField
